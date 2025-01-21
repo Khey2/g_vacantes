@@ -1,0 +1,272 @@
+<?php require_once('Connections/vacantes.php'); ?>
+<?php
+// Load the tNG classes
+require_once('includes/tng/tNG.inc.php');
+
+// Make unified connection variable
+$conn_vacantes = new KT_connection($vacantes, $database_vacantes);
+
+//Start Restrict Access To Page
+$restrict = new tNG_RestrictAccess($conn_vacantes, "");
+//Grand Levels: Level
+$restrict->addLevel("1");
+$restrict->addLevel("2");
+$restrict->addLevel("3");
+$restrict->addLevel("4");
+$restrict->addLevel("5");
+$restrict->Execute();
+//End Restrict Access To Page
+
+header('Cache-Control: no cache'); //no cache
+session_cache_limiter('private_no_expire'); // works
+
+if (!function_exists("GetSQLValueString")) {
+function GetSQLValueString($theValue, $theType, $theDefinedValue = "", $theNotDefinedValue = "") 
+{
+  if (PHP_VERSION < 6) {
+    $theValue = get_magic_quotes_gpc() ? stripslashes($theValue) : $theValue;
+  }
+
+  $theValue = function_exists("mysql_real_escape_string") ? mysql_real_escape_string($theValue) : mysql_escape_string($theValue);
+
+  switch ($theType) {
+    case "text":
+      $theValue = ($theValue != "") ? "'" . $theValue . "'" : "NULL";
+      break;    
+    case "long":
+    case "int":
+      $theValue = ($theValue != "") ? intval($theValue) : "NULL";
+      break;
+    case "double":
+      $theValue = ($theValue != "") ? doubleval($theValue) : "NULL";
+      break;
+    case "date":
+      $theValue = ($theValue != "") ? "'" . $theValue . "'" : "NULL";
+      break;
+    case "defined":
+      $theValue = ($theValue != "") ? $theDefinedValue : $theNotDefinedValue;
+      break;
+  }
+  return $theValue;
+}
+}
+
+$currentPage = $_SERVER["PHP_SELF"];
+
+mysql_select_db($database_vacantes, $vacantes);
+$query_variables = "SELECT * FROM vac_variables";
+$variables = mysql_query($query_variables, $vacantes) or die(mysql_error());
+$row_variables = mysql_fetch_assoc($variables);
+$totalRows_variables = mysql_num_rows($variables);
+$_menu = basename($_SERVER['PHP_SELF']);
+list($menu, $extra) = explode(".", $_menu);
+date_default_timezone_set("America/Mexico_City");
+$anio = $_GET['anio'];
+$desfase = $row_variables['dias_desfase'];
+
+$colname_usuario = "-1";
+
+if (isset($_SESSION['kt_login_id'])) {
+  $colname_usuario = $_SESSION['kt_login_id'];
+}
+mysql_select_db($database_vacantes, $vacantes);
+$query_usuario = sprintf("SELECT * FROM vac_usuarios WHERE IDusuario = %s", GetSQLValueString($colname_usuario, "int"));
+$usuario = mysql_query($query_usuario, $vacantes) or die(mysql_error());
+$row_usuario = mysql_fetch_assoc($usuario);
+$totalRows_usuario = mysql_num_rows($usuario); 
+$mis_areas = $row_usuario['IDareas'];
+$IDmatriz = $row_usuario['IDmatriz'];
+
+
+$fecha = date("Y-m-d"); // la fecha actual
+$la_fecha = date("Y-m-d", strtotime($fecha . $desfase)); //ayer 
+$semana = $_GET['semana']; //la semana empieza ayer 
+
+mysql_select_db($database_vacantes, $vacantes);
+$query_matriz = "SELECT * FROM vac_matriz WHERE IDmatriz = $IDmatriz";
+$matriz = mysql_query($query_matriz, $vacantes) or die(mysql_error());
+$row_matriz = mysql_fetch_assoc($matriz);
+$totalRows_matriz = mysql_num_rows($matriz);
+$matriz = $row_matriz['matriz'];
+
+require_once 'assets/PHPExcel.php';
+set_time_limit(0);
+
+if($_GET['areas'] == 1) {$a1 = ' AND prod_captura.IDarea in (1,2,3,4,11) ';}
+else if($_GET['areas'] == 2) {$a1 = ' AND prod_captura.IDarea in (1,2,11) ';}
+else if($_GET['areas'] == 3) {$a1 = ' AND prod_captura.IDarea in (3,4) ';}
+else {$a1 = ' AND prod_captura.IDarea in (1,2,3,4,11) ';}
+
+if($_GET['tipo'] == 1) {$b1 = ' AND prod_captura.autorizador IS NOT NULL ';} 
+else {$b1 = '';}
+
+if (isset($_GET['IDmatriz'])) {$c1 = 'AND prod_captura.IDmatriz IN ('.$_GET['IDmatriz'].')'; }
+else {$c1 = '';}
+
+if(isset($_GET['semana'])) { $d1 = ' AND prod_captura.semana = '.$_GET['semana']; $la_semana = $_GET['semana'];} 
+else {$d1 = " AND prod_captura.semana = ".$semana;  $la_semana = $semana;}
+
+mysql_select_db($database_vacantes, $vacantes);
+$query_reporte = "SELECT
+	prod_captura.IDempleado,
+	prod_captura.emp_paterno,
+	prod_captura.emp_materno,
+	prod_captura.emp_nombre,
+	prod_captura.denominacion,
+	prod_captura.sueldo_total,
+	prod_captura.sueldo_total,
+	prod_captura.garantizado,
+	prod_captura.adicional,
+	prod_captura.adicional2,
+	prod_captura.reci,
+	prod_captura.carg,
+	prod_captura.dist,
+	prod_captura.esti,
+	prod_captura.pago,
+	prod_captura.pago_total,
+	prod_captura.capturador,
+	prod_captura.validador,
+	prod_captura.autorizador,
+	prod_captura.lun,
+	prod_captura.mar,
+	prod_captura.mie,
+	prod_captura.jue,
+	prod_captura.vie,
+	prod_captura.sab,
+	prod_captura.dom,
+	vac_matriz.matriz,
+	prod_captura.IDpuesto,
+	prod_captura.autorizador,
+	prod_captura.bono_asistencia,
+	prod_captura.adicional3,
+	prod_captura.horas_extra,
+	prod_captura.horas_extra_monto 
+FROM
+	prod_captura
+	LEFT JOIN vac_matriz ON vac_matriz.IDmatriz = prod_captura.IDmatriz 
+WHERE
+	prod_captura.anio = '$anio' ".$a1.$b1.$c1.$d1." 
+ORDER BY
+	vac_matriz.IDmatriz ASC"; 
+mysql_query("SET NAMES 'utf8'"); 
+$reporte = mysql_query($query_reporte, $vacantes) or die(mysql_error());
+
+// PHPExcel_IOFactory
+include('assets/PHPExcel/IOFactory.php');
+
+// Creamos un objeto PHPExcel
+$objPHPExcel = new PHPExcel();
+
+// Leemos un archivo Excel 2007
+$objReader = PHPExcel_IOFactory::createReader('Excel2007');
+$objPHPExcel = $objReader->load("PRD/cedulaT_t.xlsx");
+
+    // Add some data
+    $objPHPExcel->setActiveSheetIndex(0);
+
+    $rowCount = 3; //new
+
+    while($row_reporte = mysql_fetch_array($reporte)){ 
+	
+	$AuxiliaresAlmacen = array(2, 18, 281, 282, 313, 371);
+	$sueldo = (($row_reporte['sueldo_total'] / 30) * 7);
+	$el_puesto = $row_reporte['IDpuesto'];
+	$adicional = 0;
+	
+	if($row_reporte['garantizado'] > 0) { $garantia = "SI"; } else { $garantia = "NO"; }
+	if($row_reporte['bono_asistencia'] > 0) { $bono_asistencia = $row_reporte['bono_asistencia']; } else { $bono_asistencia = 0; }
+	if($row_reporte['capturador'] == "") { $capturado = "NO"; } else { $capturado = "SI"; }
+	if($row_reporte['validador'] == "") { $validado = "NO"; } else { $validado = "SI"; }
+	if($row_reporte['autorizador'] == "") { $autorizado = "NO"; } else { $autorizado = "SI"; }
+	if($row_reporte['pago'] > 0) { $calculado = $row_reporte['pago'] / 100; } else { $calculado = 0; }
+	if(($row_reporte['lun'] + $row_reporte['mar'] + $row_reporte['mie'] + $row_reporte['jue'] + $row_reporte['vie'] + $row_reporte['sab'] + $row_reporte['dom']) < 6 ) 
+	{ $asistencia = "NO"; } else { $asistencia = "SI"; }
+
+	if (in_array($el_puesto, $AuxiliaresAlmacen))
+          { $pago_total_f = $row_reporte['pago_total']  + $row_reporte['adicional'] + $row_reporte['bono_asistencia'] + $row_reporte['horas_extra_monto'] + $row_reporte['adicional3']; } 
+     else { $pago_total_f = $row_reporte['pago_total'] + $row_reporte['adicional2'] + $row_reporte['bono_asistencia'] + $row_reporte['horas_extra_monto'];}
+	if (in_array($el_puesto, $AuxiliaresAlmacen)) { $adicional = 0; } else {if($row_reporte['adicional'] > 0) { $adicional = $row_reporte['adicional'] / 100; } else { $adicional = 0; }	}
+
+        $objPHPExcel->getActiveSheet()->SetCellValue('A'.$rowCount, $row_reporte['IDempleado']); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('B'.$rowCount, $row_reporte['emp_paterno']); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('C'.$rowCount, $row_reporte['emp_materno']); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('D'.$rowCount, $row_reporte['emp_nombre']); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('E'.$rowCount, $row_reporte['denominacion']); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('F'.$rowCount, $sueldo); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('G'.$rowCount, $garantia); 
+
+		if (in_array($el_puesto, $AuxiliaresAlmacen)) {
+		$objPHPExcel->getActiveSheet()->SetCellValue('H'.$rowCount, $adicional); 
+		
+			if ($row_reporte['adicional'] == 0) {
+			$objPHPExcel->getActiveSheet()->SetCellValue('I'.$rowCount, '0'); 
+			} else {
+			$objPHPExcel->getActiveSheet()->SetCellValue('I'.$rowCount, $row_reporte['adicional']); 
+			$adicional = $row_reporte['adicional'];
+		}
+
+		} else {
+			
+		$objPHPExcel->getActiveSheet()->SetCellValue('H'.$rowCount, $adicional); 
+		
+			if ($row_reporte['adicional'] == 0) {
+			$objPHPExcel->getActiveSheet()->SetCellValue('I'.$rowCount, '0'); 
+			} else {
+			$objPHPExcel->getActiveSheet()->SetCellValue('I'.$rowCount, $row_reporte['adicional2']); 
+			$adicional = $row_reporte['adicional2'];
+		} 
+		
+		}
+
+  if($row_reporte['reci'] > 0) { $rec1 = $row_reporte['reci']; } else { $rec1 = 0; }  
+	if($row_reporte['carg'] > 0) { $rec2 = $row_reporte['carg']; } else { $rec2 = 0; }  
+	if($row_reporte['dist'] > 0) { $rec3 = $row_reporte['dist']; } else { $rec3 = 0; }  
+	if($row_reporte['esti'] > 0) { $rec4 = $row_reporte['esti']; } else { $rec4 = 0; }  
+	if($row_reporte['adicional3'] > 0) { $rec5 = $row_reporte['adicional3']; } else { $rec5 = 0; }  
+
+	$Pre_final = $adicional + $row_reporte['pago_total'] + $row_reporte['adicional3'];
+
+	if ($row_reporte['horas_extra'] == '') { $horas_extra = 0;} else  { $horas_extra = $row_reporte['horas_extra'];}
+	if ($row_reporte['horas_extra_monto'] == '') { $horas_extra_monto = 0;} else  { $horas_extra_monto = $row_reporte['horas_extra_monto'];}
+  
+	
+        $objPHPExcel->getActiveSheet()->SetCellValue('J'.$rowCount, $rec5); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('K'.$rowCount, $horas_extra); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('L'.$rowCount, $horas_extra_monto); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('M'.$rowCount, $bono_asistencia); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('N'.$rowCount, $rec1); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('O'.$rowCount, $rec2); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('P'.$rowCount, $rec4); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('Q'.$rowCount, $rec3); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('R'.$rowCount, $calculado); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('S'.$rowCount, $row_reporte['pago_total']); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('T'.$rowCount, $pago_total_f); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('U'.$rowCount, $capturado); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('V'.$rowCount, $validado); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('W'.$rowCount, $autorizado); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('X'.$rowCount, $asistencia); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('Y'.$rowCount, $semana); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('Z'.$rowCount, $row_reporte['matriz']); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('AA'.$rowCount, $bono_asistencia); 
+        $objPHPExcel->getActiveSheet()->SetCellValue('AB'.$rowCount, $Pre_final); 
+		
+// Increment the Excel row counter
+        $rowCount++; 
+    }
+	
+	// Redirect output to a client’s web browser (Excel2007)
+	header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+	header('Content-Disposition: attachment;filename="Reporte '.date('dmY').'.xlsx"');
+	header('Cache-Control: max-age=0');
+	// If you're serving to IE 9, then the following may be needed
+	header('Cache-Control: max-age=1');
+
+	// If you're serving to IE over SSL, then the following may be needed
+	header ('Expires: Mon, 26 Jul 1997 05:00:00 GMT'); // Date in the past
+	header ('Last-Modified: '.gmdate('D, d M Y H:i:s').' GMT'); // always modified
+	header ('Cache-Control: cache, must-revalidate'); // HTTP/1.1
+	header ('Pragma: public'); // HTTP/1.0
+	$objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
+	$objWriter->save('php://output');
+    exit;
+?>

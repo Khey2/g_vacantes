@@ -1,0 +1,270 @@
+<?php require_once('Connections/vacantes.php'); ?>
+<?php
+// Load the tNG classes
+require_once('includes/tng/tNG.inc.php');
+
+// Make unified connection variable
+$conn_vacantes = new KT_connection($vacantes, $database_vacantes);
+
+//Start Restrict Access To Page
+$restrict = new tNG_RestrictAccess($conn_vacantes, "");
+//Grand Levels: Level
+$restrict->addLevel("4");
+$restrict->addLevel("5");
+$restrict->Execute();
+//End Restrict Access To Page
+
+header('Cache-Control: no cache'); //no cache
+session_cache_limiter('private_no_expire'); // works
+
+if (!function_exists("GetSQLValueString")) {
+function GetSQLValueString($theValue, $theType, $theDefinedValue = "", $theNotDefinedValue = "") 
+{
+  if (PHP_VERSION < 6) {
+    $theValue = get_magic_quotes_gpc() ? stripslashes($theValue) : $theValue;
+  }
+
+  $theValue = function_exists("mysql_real_escape_string") ? mysql_real_escape_string($theValue) : mysql_escape_string($theValue);
+
+  switch ($theType) {
+    case "text":
+      $theValue = ($theValue != "") ? "'" . $theValue . "'" : "NULL";
+      break;    
+    case "long":
+    case "int":
+      $theValue = ($theValue != "") ? intval($theValue) : "NULL";
+      break;
+    case "double":
+      $theValue = ($theValue != "") ? doubleval($theValue) : "NULL";
+      break;
+    case "date":
+      $theValue = ($theValue != "") ? "'" . $theValue . "'" : "NULL";
+      break;
+    case "defined":
+      $theValue = ($theValue != "") ? $theDefinedValue : $theNotDefinedValue;
+      break;
+  }
+  return $theValue;
+}
+}
+
+mysql_select_db($database_vacantes, $vacantes);
+$query_variables = "SELECT * FROM vac_variables";
+$variables = mysql_query($query_variables, $vacantes) or die(mysql_error());
+$row_variables = mysql_fetch_assoc($variables);
+$totalRows_variables = mysql_num_rows($variables);
+$_menu = basename($_SERVER['PHP_SELF']);
+list($menu, $extra) = explode(".", $_menu);
+date_default_timezone_set("America/Mexico_City");
+$anio = $row_variables['anio'];
+$desfase = $row_variables['dias_desfase'];
+
+$colname_usuario = "-1";
+if (isset($_SESSION['kt_login_id'])) {
+  $colname_usuario = $_SESSION['kt_login_id'];
+}
+mysql_select_db($database_vacantes, $vacantes);
+$query_usuario = sprintf("SELECT * FROM vac_usuarios WHERE IDusuario = %s", GetSQLValueString($colname_usuario, "int"));
+$usuario = mysql_query($query_usuario, $vacantes) or die(mysql_error());
+$row_usuario = mysql_fetch_assoc($usuario);
+$totalRows_usuario = mysql_num_rows($usuario);
+$mis_areas = $row_usuario['IDareas'];
+$IDmatriz = $row_usuario['IDmatriz'];
+
+
+
+mysql_select_db($database_vacantes, $vacantes);
+$query_fuentes = "SELECT * FROM vac_fuentes";
+mysql_query("SET NAMES 'utf8'");
+$fuentes = mysql_query($query_fuentes, $vacantes) or die(mysql_error());
+$row_fuentes = mysql_fetch_assoc($fuentes);
+$totalRows_fuentes = mysql_num_rows($fuentes);
+
+if(!isset($_SESSION['el_mes'])) 
+{ $_SESSION['el_mes'] = date("m");}
+
+$el_mes = $_SESSION['el_mes'];
+
+$IDmatriz = $row_usuario['IDmatriz'];
+
+mysql_select_db($database_vacantes, $vacantes);
+$query_matriz = "SELECT * FROM vac_matriz WHERE IDmatriz = $IDmatriz";
+$matriz = mysql_query($query_matriz, $vacantes) or die(mysql_error());
+$row_matriz = mysql_fetch_assoc($matriz);
+$totalRows_matriz = mysql_num_rows($matriz);
+
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title><?php echo $row_variables['nombre_sistema']; ?></title>
+	<meta name="robots" content="noindex" />
+	<meta name="robots" content="noindex" />
+
+	<!-- Global stylesheets -->
+	<link href="https://fonts.googleapis.com/css?family=Roboto:400,300,100,500,700,900" rel="stylesheet" type="text/css">
+    <link rel="icon" type="image/gif" href="global_assets/images/logo.ico">
+<link href="global_assets/css/icons/icomoon/styles.css" rel="stylesheet" type="text/css">
+	<link href="assets/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+	<link href="assets/css/core.min.css" rel="stylesheet" type="text/css">
+	<link href="assets/css/components.min.css" rel="stylesheet" type="text/css">
+	<link href="assets/css/colors.min.css" rel="stylesheet" type="text/css">
+	<!-- /global stylesheets -->
+
+	<!-- Core JS files -->
+	<script src="global_assets/js/plugins/loaders/pace.min.js"></script>
+	<script src="global_assets/js/core/libraries/jquery.min.js"></script>
+	<script src="global_assets/js/core/libraries/bootstrap.min.js"></script>
+	<script src="global_assets/js/plugins/loaders/blockui.min.js"></script>
+	<!-- /core JS files -->
+
+	<script src="assets/js/app.js"></script>
+   	<script src="global_assets/js/plugins/tables/datatables/datatables.min.js"></script>
+	<script src="global_assets/js/plugins/forms/selects/select2.min.js"></script>
+	
+	<script src="global_assets/js/demo_pages/datatables_advanced.js"></script>
+    <!-- /theme JS files -->
+</head>
+<body <?php if (isset($_COOKIE["lmenu"])) { echo 'class="sidebar-xs"';}?>>
+			<?php require_once('assets/mainnav.php'); ?>
+<!-- Page container -->
+	<div class="page-container">
+
+		<!-- Page content -->
+		<div class="page-content">
+
+		<?php require_once('assets/menu.php'); ?>
+
+
+			<!-- Main content -->
+			<div class="content-wrapper">		
+			<?php require_once('assets/pheader.php'); ?>
+
+<!-- Content area -->
+<div class="content">
+                
+						<!-- Basic alert -->
+                        <?php if((isset($_GET['info']) && ($_GET['info'] == 1))) { ?>
+					    <div class="alert bg-green-600 alert-styled-left">
+							<button type="button" class="close" data-dismiss="alert"><span>&times;</span><span class="sr-only">Cerrar</span></button>
+							Se ha agregado correctamente el registro.
+					    </div>
+                        <?php } ?>
+					    <!-- /basic alert -->
+                
+						<!-- Basic alert -->
+                        <?php if((isset($_GET['info']) && ($_GET['info'] == 2))) { ?>
+					    <div class="alert bg-blue-600 alert-styled-left">
+							<button type="button" class="close" data-dismiss="alert"><span>&times;</span><span class="sr-only">Cerrar</span></button>
+							Se ha actualizado correctamente el registro.
+					    </div>
+                        <?php } ?>
+					    <!-- /basic alert -->
+
+						<!-- Basic alert -->
+                        <?php if((isset($_GET['info']) && ($_GET['info'] == 3))) { ?>
+					    <div class="alert bg-danger-600 alert-styled-left">
+							<button type="button" class="close" data-dismiss="alert"><span>&times;</span><span class="sr-only">Cerrar</span></button>
+							Se ha borrado correctamente el registro.
+					    </div>
+                        <?php } ?>
+					    <!-- /basic alert -->
+
+
+					<!-- Contenido -->
+                  <div class="panel panel-flat">
+						<div class="panel-heading">
+							<h5 class="panel-title">Bienvenido</h5>
+						</div>
+
+					<div class="panel-body">
+							<p>Selecciona el registro para editar.</p>
+					</div>
+                    
+			     		<table class="table datatable-show-all">
+						<thead>
+						 <tr class="bg-blue">
+                          <th>IDFuente</th>
+                          <th>Nombre de la Fuente</th>
+                          <th>Costo</th>
+					      <th class="text-center">Acciones</th>
+						 </tr>
+					    </thead>
+						<tbody>							  
+                      <?php do { ?>
+                        <tr>
+                          <td><?php echo $row_fuentes['IDfuente']; ?></td>
+                          <td><?php echo $row_fuentes['fuente']; ?></td>
+                         <td><?php if ($row_fuentes['costo'] == 1) {echo "CON COSTO";} else {echo "SIN COSTO";} ?></td>
+                         <td><button type="button" class="btn btn-primary" onClick="window.location.href='master_admin_fuentes_edit.php?IDfuente=<?php echo $row_fuentes['IDfuente']; ?>'">Editar</button> 
+                         <button type="button" data-target="#modal_theme_danger<?php echo $row_fuentes['IDfuente']; ?>"  data-toggle="modal" class="btn btn-danger btn-icon">Borrar</button>
+                            </td>
+						    </tr>
+                            
+                  <!-- danger modal -->
+					<div id="modal_theme_danger<?php echo $row_fuentes['IDfuente']; ?>" class="modal fade" tabindex="-1">
+						<div class="modal-dialog">
+							<div class="modal-content">
+								<div class="modal-header bg-danger">
+									<button type="button" class="close" data-dismiss="modal">&times;</button>
+									<h6 class="modal-title">Confirmación de Borrado</h6>
+								</div>
+
+								<div class="modal-body">
+									<p>¿Estas seguro que quieres borrar el registro?</p>
+								</div>
+
+								<div class="modal-footer">
+									<button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+                                    <a class="btn btn-danger" href="master_admin_fuentes_edit.php?IDfuente_borrar=<?php echo $row_fuentes['IDfuente']; ?>">Si borrar</a>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /danger modal -->
+
+                        <?php } while ($row_fuentes = mysql_fetch_assoc($fuentes)); ?>
+                   	</tbody>							  
+                 </table>
+
+                  <!-- Colored button -->
+					<div class="row">
+					<div class="panel-body text-center">
+                    <a class="btn btn-primary" href="master_admin_fuentes_edit.php">Agregar Fuente<i class="icon-arrow-right14 position-right"></i></a>
+                    </div>
+					</div>
+					<!-- /colored button -->
+
+
+					<!-- /Contenido -->
+
+					<!-- Footer -->
+					<div class="footer text-muted">
+						&copy; <?php echo $anio; ?>. <a href="#"><?php echo $row_variables['nombre_sistema']; ?></a> V: 0.9.2 en <a href="<?php echo $row_variables['direccion_web']; ?>" target="_blank"><?php echo $row_variables['empresa']; ?></a>
+					</div>
+					<!-- /footer -->
+
+				</div>
+				<!-- /content area -->
+
+			</div>
+			<!-- /main content -->
+
+		</div>
+		<!-- /page content -->
+
+</div>
+	<!-- /page container -->
+
+
+</body>
+</html>
+<?php
+mysql_free_result($variables);
+
+mysql_free_result($fuentes);
+
+mysql_free_result($usuarios);
+?>

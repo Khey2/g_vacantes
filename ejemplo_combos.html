@@ -1,0 +1,51 @@
+<!DOCTYPE html> 
+<html>
+<head>
+</head>
+
+<body>
+	<div class='col-sm-4'>
+	    <div class='box box-default'>
+	        <h3 class='box-title'>Ejemplo de combos dependientes</h3>
+	        
+	        <form id='form1' name='form1' method='post' action=''>
+	            <div class='box-body'>
+	                <div class="form-group">
+				        <label for="pais">Paises:</label>
+				        <select name="pais" id="pais" class="form-control" required>
+				            <option value="">Seleccione...</option>
+				            <option value="1">Argentina</option>
+				            <option value="2">España</option>
+				            <option value="3">Mexico</option>
+				        </select>
+				    </div>
+				    <div class="form-group">
+				        <label for="ciudad">Ciudades:</label>
+				        <select name="ciudad" id="ciudad" class="form-control"></select>
+				    </div>
+	            </div>
+
+	            <div class='box-footer'>
+	                <input type='submit' class='btn btn-success' value='Enviar'>                      
+	            </div>
+	        </form>
+	    </div>
+	</div>
+
+
+<!--Llamada al evento Change del selector Países-->
+<script language="javascript">
+$(document).ready(function(){
+    $("#pais").on('change', function () {
+        $("#pais option:selected").each(function () {
+            paiselegido=$(this).val();
+            $.post("buscarciudades.php", { paiselegido: paiselegido }, function(data){
+                $("#ciudad").html(data);
+            });			
+        });
+   });
+});
+</script>
+
+</body>
+</html>
