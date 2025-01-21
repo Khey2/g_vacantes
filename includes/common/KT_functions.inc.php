@@ -945,7 +945,7 @@ function KT_getRealValue($method, $reference) {
 			break;
 	}
 	if ($needStrip && !is_null($ret)) {
-		if (get_magic_quotes_gpc() || (isset($GLOBALS['KT_serverModel']) && $GLOBALS['KT_serverModel'] == 'adodb')) {
+		if ( (isset($GLOBALS['KT_serverModel']) && $GLOBALS['KT_serverModel'] == 'adodb')) {
 			if (is_array($ret)) {
 				array_walk($ret, 'KT_stripslashes');
 			} else {

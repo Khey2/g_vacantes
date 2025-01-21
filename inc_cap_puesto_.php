@@ -1,4 +1,5 @@
 <?php require_once('Connections/vacantes.php'); ?>
+
 <?php
 // Load the tNG classes
 
@@ -8,6 +9,7 @@ require_once('includes/tng/tNG.inc.php');
 $conn_vacantes = new KT_connection($vacantes, $database_vacantes);
 
 //Start Restrict Access To Page
+
 $restrict = new tNG_RestrictAccess($conn_vacantes, "");
 //Grand Levels: Level
 $restrict->addLevel("1");
@@ -51,6 +53,7 @@ function GetSQLValueString($theValue, $theType, $theDefinedValue = "", $theNotDe
   return $theValue;
 }
 }
+
 
 
 mysql_select_db($database_vacantes, $vacantes);

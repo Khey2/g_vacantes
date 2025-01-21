@@ -16,7 +16,6 @@ $restrict->addLevel("3");
 $restrict->addLevel("4");
 $restrict->addLevel("5");
 $restrict->Execute();
-var_dump( $restrict );exit;
 //End Restrict Access To Page
 
 
@@ -51,52 +50,173 @@ function GetSQLValueString($theValue, $theType, $theDefinedValue = "", $theNotDe
 }
 }
 
+//! MIKE: cambiando mysql_select_db
+$conn = new mysqli( $hostname_vacantes, $username_vacantes, "", $database_vacantes );
+$conn->set_charset("utf8");
 
-mysql_select_db($database_vacantes, $vacantes);
 $query_variables = "SELECT * FROM vac_variables";
-$variables = mysql_query($query_variables, $vacantes) or die(mysql_error());
-mysql_query("SET NAMES 'utf8'");
-$row_variables = mysql_fetch_assoc($variables);
-$totalRows_variables = mysql_num_rows($variables);
-$_menu = basename($_SERVER['PHP_SELF']);
-list($menu, $extra) = explode(".", $_menu);
-date_default_timezone_set("America/Mexico_City");
+$result = $conn->query($query_variables);
+
+if ($result === false) {
+    die("Error en la consulta: " . $conn->error);
+}
+
+$row_variables = $result->fetch_assoc();
+$totalRows_variables = $result->num_rows;
+
 $anio = $row_variables['anio'];
 $desfase = $row_variables['dias_desfase'];
+
+date_default_timezone_set("America/Mexico_City");
+
+$_menu = basename($_SERVER['PHP_SELF']);
+list($menu, $extra) = explode(".", $_menu);
+
+
+// mysql_select_db($database_vacantes, $vacantes);
+// $query_variables = "SELECT * FROM vac_variables";
+// $variables = mysql_query($query_variables, $vacantes) or die(mysql_error());
+// mysql_query("SET NAMES 'utf8'");
+// $row_variables = mysql_fetch_assoc($variables);
+// $totalRows_variables = mysql_num_rows($variables);
+// $_menu = basename($_SERVER['PHP_SELF']);
+// list($menu, $extra) = explode(".", $_menu);
+// date_default_timezone_set("America/Mexico_City");
+// $anio = $row_variables['anio'];
+// $desfase = $row_variables['dias_desfase'];
 
 $colname_usuario = "-1";
 if (isset($_SESSION['kt_login_id'])) {
   $colname_usuario = $_SESSION['kt_login_id'];
 }
-mysql_select_db($database_vacantes, $vacantes);
-$query_usuario = sprintf("SELECT * FROM vac_usuarios WHERE IDusuario = %s", GetSQLValueString($colname_usuario, "int"));
-$usuario = mysql_query($query_usuario, $vacantes) or die(mysql_error());
-$row_usuario = mysql_fetch_assoc($usuario);
-$totalRows_usuario = mysql_num_rows($usuario); 
-$mis_areas = $row_usuario['IDmatrizes'];
-$IDmatrizes = $row_usuario['IDmatrizes'];
-$la_matriz = $row_usuario['IDmatriz'];
-$IDmatriz = $row_usuario['IDmatriz'];
-$el_usuario = $row_usuario['IDusuario'];
 
-mysql_select_db($database_vacantes, $vacantes);
-$query_matriz = "SELECT * FROM vac_matriz WHERE IDmatriz = $la_matriz";
-$matriz = mysql_query($query_matriz, $vacantes) or die(mysql_error());
-$row_matriz = mysql_fetch_assoc($matriz);
-$totalRows_matriz = mysql_num_rows($matriz);
-$la_matriz = $row_matriz['matriz']; 
+$colname_usuario = $conn->real_escape_string($colname_usuario);
 
-mysql_select_db($database_vacantes, $vacantes);
-$query_puestos = "SELECT DISTINCT vac_puestos.IDpuesto, vac_puestos.denominacion, vac_puestos.IDarea, vac_areas.area FROM vac_puestos LEFT JOIN prod_activos ON vac_puestos.IDpuesto = prod_activos.IDpuesto LEFT JOIN vac_areas ON vac_puestos.IDarea = vac_areas.IDarea WHERE prod_activos.IDmatriz = $IDmatriz AND prod_activos.IDaplica_INC = 1 ORDER BY vac_puestos.denominacion ASC";
-$puestos = mysql_query($query_puestos, $vacantes) or die(mysql_error());
-$row_puestos = mysql_fetch_assoc($puestos);
-$totalRows_puestos = mysql_num_rows($puestos);
+// Preparar la consulta
+$query_usuario = sprintf("SELECT * FROM vac_usuarios WHERE IDusuario = %d", (int)$colname_usuario);
+$result = $conn->query($query_usuario);
 
-mysql_select_db($database_vacantes, $vacantes);
-$query_areas = "SELECT * FROM vac_areas WHERE IDarea in (1,2,3,4,5,6,7,8,9,10,11)";
-$areas = mysql_query($query_areas, $vacantes) or die(mysql_error());
-$row_areas = mysql_fetch_assoc($areas);
-$totalRows_areas = mysql_num_rows($areas);
+// Verificar si la consulta tuvo éxito
+if (!$result) {
+  die("Error en la consulta: " . $conn->error);
+}
+
+// Obtener los resultados
+$row_usuario = $result->fetch_assoc();
+$totalRows_usuario = $result->num_rows;
+
+// Asignar valores a las variables
+$mis_areas = $row_usuario['IDmatrizes'] ?? null;
+$IDmatrizes = $row_usuario['IDmatrizes'] ?? null;
+$la_matriz = $row_usuario['IDmatriz'] ?? null;
+$IDmatriz = $row_usuario['IDmatriz'] ?? null;
+$el_usuario = $row_usuario['IDusuario'] ?? null;
+
+// mysql_select_db($database_vacantes, $vacantes);
+// $query_usuario = sprintf("SELECT * FROM vac_usuarios WHERE IDusuario = %s", GetSQLValueString($colname_usuario, "int"));
+// $usuario = mysql_query($query_usuario, $vacantes) or die(mysql_error());
+// $row_usuario = mysql_fetch_assoc($usuario);
+// $totalRows_usuario = mysql_num_rows($usuario); 
+// $mis_areas = $row_usuario['IDmatrizes'];
+// $IDmatrizes = $row_usuario['IDmatrizes'];
+// $la_matriz = $row_usuario['IDmatriz'];
+// $IDmatriz = $row_usuario['IDmatriz'];
+// $el_usuario = $row_usuario['IDusuario'];
+
+
+
+$query_matriz = "SELECT * FROM vac_matriz WHERE IDmatriz = ?";
+$stmt = $conn->prepare($query_matriz);
+
+// Verificar si la preparación de la consulta fue exitosa
+if ($stmt === false) {
+    die("Error en la preparación de la consulta: " . $conn->error);
+}
+
+// Vincular el parámetro de la consulta
+$stmt->bind_param("i", $la_matriz);  // "i" indica que $la_matriz es un entero
+
+// Ejecutar la consulta
+$stmt->execute();
+
+// Obtener los resultados
+$result = $stmt->get_result();
+
+// Verificar si hay resultados
+if ($result->num_rows > 0) {
+    // Obtener los datos de la primera fila
+    $row_matriz = $result->fetch_assoc();
+    $totalRows_matriz = $result->num_rows;
+    $la_matriz = $row_matriz['matriz'];
+} else {
+    $totalRows_matriz = 0;
+    $la_matriz = null;
+}
+
+$query_puestos = "
+    SELECT DISTINCT vac_puestos.IDpuesto, vac_puestos.denominacion, vac_puestos.IDarea, vac_areas.area 
+    FROM vac_puestos 
+    LEFT JOIN prod_activos ON vac_puestos.IDpuesto = prod_activos.IDpuesto 
+    LEFT JOIN vac_areas ON vac_puestos.IDarea = vac_areas.IDarea 
+    WHERE prod_activos.IDmatriz = ? AND prod_activos.IDaplica_INC = 1 
+    ORDER BY vac_puestos.denominacion ASC
+";
+
+// Preparar la consulta
+$stmt = $conn->prepare($query_puestos);
+
+// Verificar si la preparación de la consulta fue exitosa
+if ($stmt === false) {
+    die("Error en la preparación de la consulta: " . $conn->error);
+}
+
+// Vincular el parámetro de la consulta
+$stmt->bind_param("i", $IDmatriz);  // "i" indica que $IDmatriz es un entero
+
+// Ejecutar la consulta
+$stmt->execute();
+
+// Obtener los resultados
+$result = $stmt->get_result();
+
+// Verificar si hay resultados
+if ($result->num_rows > 0) {
+    // Obtener los datos de la primera fila
+    $row_puestos = $result->fetch_assoc();
+    $totalRows_puestos = $result->num_rows;
+} else {
+    $totalRows_puestos = 0;
+    $row_puestos = null;
+}
+
+
+// mysql_select_db($database_vacantes, $vacantes);
+// $query_puestos = "SELECT DISTINCT vac_puestos.IDpuesto, vac_puestos.denominacion, vac_puestos.IDarea, vac_areas.area FROM vac_puestos LEFT JOIN prod_activos ON vac_puestos.IDpuesto = prod_activos.IDpuesto LEFT JOIN vac_areas ON vac_puestos.IDarea = vac_areas.IDarea WHERE prod_activos.IDmatriz = $IDmatriz AND prod_activos.IDaplica_INC = 1 ORDER BY vac_puestos.denominacion ASC";
+// $puestos = mysql_query($query_puestos, $vacantes) or die(mysql_error());
+// $row_puestos = mysql_fetch_assoc($puestos);
+// $totalRows_puestos = mysql_num_rows($puestos);
+
+
+// Consulta para obtener las áreas
+$query_areas = "SELECT * FROM vac_areas WHERE IDarea IN (1,2,3,4,5,6,7,8,9,10,11)";
+
+// Ejecutar la consulta
+$areas = $conn->query($query_areas);
+
+// Verificar si la consulta fue exitosa
+if ($areas === false) {
+    die("Error en la consulta: " . $conn->error);
+}
+
+// Obtener los resultados
+$row_areas = $areas->fetch_assoc();
+$totalRows_areas = $areas->num_rows;
+
+// mysql_select_db($database_vacantes, $vacantes);
+// $query_areas = "SELECT * FROM vac_areas WHERE IDarea in (1,2,3,4,5,6,7,8,9,10,11)";
+// $areas = mysql_query($query_areas, $vacantes) or die(mysql_error());
+// $row_areas = mysql_fetch_assoc($areas);
+// $totalRows_areas = mysql_num_rows($areas);
 
 // mes y semana
 $el_mes = date("m");

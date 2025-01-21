@@ -52,11 +52,26 @@ function GetSQLValueString($theValue, $theType, $theDefinedValue = "", $theNotDe
 }
 }
 
-mysql_select_db($database_vacantes, $vacantes);
+
+//! Migracion a conn
+$conn = new mysqli( $hostname_vacantes, $username_vacantes, "", $database_vacantes );
+
+
+
 $query_variables = "SELECT * FROM vac_variables";
-$variables = mysql_query($query_variables, $vacantes) or die(mysql_error());
-$row_variables = mysql_fetch_assoc($variables);
-$totalRows_variables = mysql_num_rows($variables);
+$result = $conn->query( $query_variables );
+// Comprobar si la consulta se ejecutó correctamente 
+if ($result === FALSE) { die("Error: " . $conn->error); };
+// Obtener los resultados 
+$row_variables = $result->fetch_assoc(); 
+$totalRows_variables = $result->num_rows;
+
+
+// mysql_select_db($database_vacantes, $vacantes);
+// $query_variables = "SELECT * FROM vac_variables";
+// $variables = mysql_query($query_variables, $vacantes) or die(mysql_error());
+// $row_variables = mysql_fetch_assoc($variables);
+// $totalRows_variables = mysql_num_rows($variables);
 date_default_timezone_set("America/Mexico_City");
 $anio = $row_variables['anio'];
 $desfase = $row_variables['dias_desfase'];
@@ -168,56 +183,56 @@ $totalRows_rscustom = mysql_num_rows($rscustom);
 						<div class="tab-content panel-body">
 							<div class="tab-pane fade in active" id="basic-tab1">
 							
-					<form method="post" id="form1" action="<?php echo KT_escapeAttribute(KT_getFullUri()); ?>">
-							<div class="text-center">
-							 <div>&nbsp;</div>	
-								<div><img src="assets/img/logo_sahuayo.png" width="219" height="60" alt="logo"></div>
-							 <div>&nbsp;</div>	
-							  <h5 class="content-group-lg"><?php echo $row_variables['nombre_sistema'];?><small class="display-block">Acceso</small></h5>
-							</div>
-
-							<div class="form-group has-feedback has-feedback-left">
-								<input type="email" class="form-control" name="kt_login_user" id="kt_login_user" placeholder="Correo Sahuayo" 
-                                value="<?php if(isset($_POST['kt_login_user'])) {echo KT_escapeAttribute($_POST['kt_login_user']); } ?>" required="required" >
-                                <div class="form-control-feedback">
-									<i class="icon-user text-muted"></i>
-							  </div>
-							</div>
-
-							<div class="form-group has-feedback has-feedback-left">
-								<input type="password" class="form-control" placeholder="Password" name="kt_login_password" id="kt_login_password" value="<?php if(isset($_POST['kt_login_password'])) {echo KT_escapeAttribute($_POST['kt_login_password']); } ?>" required="required">
-								<div class="text-danger"><?php echo $tNGs->displayFieldHint("kt_login_password");?></div>
-                                <div class="text-danger"><?php echo $tNGs->displayFieldError("custom", "kt_login_password"); ?></div>
-								<div class="text-danger"><?php echo $tNGs->displayFieldHint("kt_login_user");?></div>
-                                <div class="text-danger"> <?php echo $tNGs->displayFieldError("custom", "kt_login_user"); ?></div>
-								<div class="form-control-feedback">
-									<i class="icon-lock2 text-muted"></i>
-                              </div>
-							</div>
-
-							<div class="form-group login-options">
-								<div class="row">
-									<div class="col-sm-6">
+							<form method="post" id="form1" action="<?php echo KT_escapeAttribute(KT_getFullUri()); ?>">
+									<div class="text-center">
+									<div>&nbsp;</div>	
+										<div><img src="assets/img/logo_sahuayo.png" width="219" height="60" alt="logo"></div>
+									<div>&nbsp;</div>	
+									<h5 class="content-group-lg"><?php echo $row_variables['nombre_sistema'];?><small class="display-block">Acceso</small></h5>
 									</div>
-                                    <div class="g-recaptcha" data-sitekey="6Ld8htgSAAAAAKKTuo_p6Xd7Ezccry2zbfgtMEjQ"></div>
-                                     <?php if(isset($recaptcha) && ($recaptcha == 1) && isset($_POST["g-recaptcha-response"])) { ?>
-									<div class="text-danger">Comprueba la validación</div>                                     
-									<?php } ?>
-							 <div>&nbsp;</div>	
-                                    
-							  <div class="col-sm-12 text-right">
-										<p><a href="mailto:jacardenas@sahuayo.mx">Olvidase tu Password?</a></p>
-									</div>
-                                    
-							  </div>
-							</div>
 
-						  <div class="form-group">
-                              <button type="submit" name="kt_login1" id="kt_login1" class="btn bg-blue btn-block">Acceder 
-                              <i class="icon-circle-right2 position-right"></i></button>
-							</div>
-						  <span class="help-block text-center no-margin">Accediendo, confirmas que aceptas los </br><a href="terminos.php">Términos y condiciones del servicio.</a></span>
-					</form>
+									<div class="form-group has-feedback has-feedback-left">
+										<input type="email" class="form-control" name="kt_login_user" id="kt_login_user" placeholder="Correo Sahuayo" 
+										value="<?php if(isset($_POST['kt_login_user'])) {echo KT_escapeAttribute($_POST['kt_login_user']); } ?>" required="required" >
+										<div class="form-control-feedback">
+											<i class="icon-user text-muted"></i>
+									</div>
+									</div>
+
+									<div class="form-group has-feedback has-feedback-left">
+										<input type="password" class="form-control" placeholder="Password" name="kt_login_password" id="kt_login_password" value="<?php if(isset($_POST['kt_login_password'])) {echo KT_escapeAttribute($_POST['kt_login_password']); } ?>" required="required">
+										<div class="text-danger"><?php echo $tNGs->displayFieldHint("kt_login_password");?></div>
+										<div class="text-danger"><?php echo $tNGs->displayFieldError("custom", "kt_login_password"); ?></div>
+										<div class="text-danger"><?php echo $tNGs->displayFieldHint("kt_login_user");?></div>
+										<div class="text-danger"> <?php echo $tNGs->displayFieldError("custom", "kt_login_user"); ?></div>
+										<div class="form-control-feedback">
+											<i class="icon-lock2 text-muted"></i>
+									</div>
+									</div>
+
+									<div class="form-group login-options">
+										<div class="row">
+											<div class="col-sm-6">
+											</div>
+											<div class="g-recaptcha" data-sitekey="6Ld8htgSAAAAAKKTuo_p6Xd7Ezccry2zbfgtMEjQ"></div>
+											<?php if(isset($recaptcha) && ($recaptcha == 1) && isset($_POST["g-recaptcha-response"])) { ?>
+											<div class="text-danger">Comprueba la validación</div>                                     
+											<?php } ?>
+									<div>&nbsp;</div>	
+											
+									<div class="col-sm-12 text-right">
+												<p><a href="mailto:jacardenas@sahuayo.mx">Olvidase tu Password?</a></p>
+											</div>
+											
+									</div>
+									</div>
+
+								<div class="form-group">
+									<button type="submit" name="kt_login1" id="kt_login1" class="btn bg-blue btn-block">Acceder 
+									<i class="icon-circle-right2 position-right"></i></button>
+									</div>
+								<span class="help-block text-center no-margin">Accediendo, confirmas que aceptas los </br><a href="terminos.php">Términos y condiciones del servicio.</a></span>
+							</form>
                                 
 							</div>
 
@@ -243,5 +258,7 @@ $totalRows_rscustom = mysql_num_rows($rscustom);
 </body>
 </html>
 <?php
-mysql_free_result($variables);
+	$result->free();
+	$conn->close();
+
 ?>

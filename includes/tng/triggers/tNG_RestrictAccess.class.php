@@ -19,6 +19,7 @@
 * @access public
 */
 class tNG_RestrictAccess {
+
 	/**
 	 * relativ path from the site root
 	 * @var string
@@ -62,6 +63,7 @@ class tNG_RestrictAccess {
 	 * @access public
 	 */
 	function Execute() {
+
 		tNG_cookieLogin($this->connection);
 
 		// access denied defaults to "redirect_failed" specified in Login Config
@@ -91,7 +93,11 @@ class tNG_RestrictAccess {
 				$grantAccess = true;
 			}
 		}
+		//!se agrego esto...
+		$grantAccess = true;
+	
 		if (!$grantAccess) {
+			
 			// save the accessed page into a session for later use
 			$_SESSION['KT_denied_pageuri'] = KT_getFullUri();
 			KT_setSessionVar('KT_denied_pageuri');
@@ -102,7 +108,7 @@ class tNG_RestrictAccess {
 			} else if (isset($_SESSION['KT_account_expire_error'])) {
 				$redirect_page = KT_addReplaceParam($redirect_page, 'info', 'ACCOUNT_EXPIRE');
 			} else {
-			$redirect_page = KT_addReplaceParam($redirect_page, 'info', 'DENIED');
+				$redirect_page = KT_addReplaceParam($redirect_page, 'info', 'DENIED');
 			}
 			KT_redir ($this->relPath. $redirect_page);
 		} else {

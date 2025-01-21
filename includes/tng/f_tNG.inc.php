@@ -107,7 +107,7 @@
 		}
 	}
 
-	function __autoload($class_name) {
+	spl_autoload_register( function ($class_name) {
 		$arr = array(
 			'tNG_log' => 'tNG_log.class.php',
 			'tNG_dispatcher' => 'tNG_dispatcher.class.php',
@@ -165,7 +165,7 @@
 		if (isset($arr[$class_name])) {
 		   require_once(dirname(realpath(__FILE__)). '/' . $arr[$class_name]);
 		}
-	}
+	});
 
 if (isset($GLOBALS['KT_prefered_image_lib'])) {
 	$GLOBALS['tNG_prefered_image_lib'] = $GLOBALS['KT_prefered_image_lib'];

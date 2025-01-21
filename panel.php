@@ -3,6 +3,8 @@
 // Load the tNG classes
 require_once('includes/tng/tNG.inc.php');
 
+var_dump("panel.php"); exit;
+
 // Make unified connection variable
 $conn_vacantes = new KT_connection($vacantes, $database_vacantes);
 

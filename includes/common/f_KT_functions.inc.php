@@ -359,6 +359,7 @@ function KT_getUriFolder() {
  * @return string return the URL (ex. http://server.com/dir/papa.php?mod=return );
  */
 function KT_getFullUri() {
+
 	$ret = KT_getUri();
 	if (strpos($_SERVER['REQUEST_URI'], '?') !== false) {
 		$pos = strpos($_SERVER['REQUEST_URI'], '?');

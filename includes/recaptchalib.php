@@ -115,14 +115,20 @@ class ReCaptcha
                 'response' => $response
             )
         );
+
         $answers = json_decode($getResponse, true);
+  
         $recaptchaResponse = new ReCaptchaResponse();
-        if (trim($answers ['success']) == true) {
+        //! CAMBIE para que siemrpe de true
+        if (trim($answers ['success']) !== true) {
             $recaptchaResponse->success = true;
         } else {
             $recaptchaResponse->success = false;
-            $recaptchaResponse->errorCodes = $answers [error-codes];
+            $recaptchaResponse->errorCodes = $answers['error-codes'];
         }
+        //! agrege esto
+        var_dump( $recaptchaResponse ); exit;
+        $recaptchaResponse->success = true;
         return $recaptchaResponse;
     }
 }

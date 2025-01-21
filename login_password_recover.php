@@ -2,6 +2,7 @@
 require_once "includes/recaptchalib.php";
 ?>
 <?php
+var_dump("login_password_recover.php");exit;
 
 if (!function_exists("GetSQLValueString")) {
 function GetSQLValueString($theValue, $theType, $theDefinedValue = "", $theNotDefinedValue = "") 

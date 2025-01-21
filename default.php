@@ -51,12 +51,24 @@ function GetSQLValueString($theValue, $theType, $theDefinedValue = "", $theNotDe
   return $theValue;
 }
 }
+//! MIKE: cambiando mysql_select_db
+$conn = new mysqli( $hostname_vacantes, $username_vacantes, "", $database_vacantes );
 
-mysql_select_db($database_vacantes, $vacantes);
+
+
 $query_variables = "SELECT * FROM vac_variables";
-$variables = mysql_query($query_variables, $vacantes) or die(mysql_error());
-$row_variables = mysql_fetch_assoc($variables);
-$totalRows_variables = mysql_num_rows($variables);
+$result = $conn->query( $query_variables );
+// Comprobar si la consulta se ejecutó correctamente 
+if ($result === FALSE) { die("Error: " . $conn->error); };
+// Obtener los resultados 
+$row_variables = $result->fetch_assoc(); 
+$totalRows_variables = $result->num_rows;
+
+// mysql_select_db($database_vacantes, $vacantes);
+// $query_variables = "SELECT * FROM vac_variables";
+// $variables = mysql_query($query_variables, $vacantes) or die(mysql_error());
+// $row_variables = mysql_fetch_assoc($variables);
+// $totalRows_variables = mysql_num_rows($variables);
 date_default_timezone_set("America/Mexico_City");
 $anio = $row_variables['anio'];
 $desfase = $row_variables['dias_desfase'];
@@ -243,5 +255,6 @@ $totalRows_rscustom = mysql_num_rows($rscustom);
 </body>
 </html>
 <?php
-mysql_free_result($variables);
+	$result->free();
+	$conn->close();
 ?>

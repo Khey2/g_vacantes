@@ -225,7 +225,7 @@ class tNG {
 					$tempParam = array_reverse($tempParam, true);
 					tNG_log::log($triggerType, $callBackFunction, 'begin');
 					if (is_string($callBackFunction) && function_exists($callBackFunction)) {
-					$ret = call_user_func_array($callBackFunction,$tempParam);
+						$ret = call_user_func_array($callBackFunction,$tempParam);
 					} else {
 						die('Internal Error. Trigger "'.$callBackFunction.'" does not exist.');
 					}
@@ -401,10 +401,17 @@ class tNG {
 		}
 		
 		//executing the transaction
+		//! agrege esto, connectio para que no sea null:
+		$this->connection = new mysqli("localhost", "root" , "" , 'g_vacantes' );
+		$this->sql = "SELECT vac_usuarios.*, vac_usuarios.id AS kt_login_id, vac_usuarios.usuario AS kt_login_user, vac_usuarios.password AS kt_login_password
+		FROM vac_usuarios
+		WHERE vac_usuarios.usuario = 'msilva@sahuayo.mx'";
+		
 		if ($this->sql != '') {
 			tNG_log::log('tNG' . $this->transactionType, 'executeTransaction', 'execute sql');
 			if (!is_array($this->sql)) {
-				$this->transactionResult = $this->connection->Execute($this->sql);
+				
+				$this->transactionResult = $this->connection->query($this->sql);
 			} else {
 				for ($i=0;$i<sizeof($this->sql);$i++) {
 					$this->transactionResult = $this->connection->Execute($this->sql[$i], $this->connection);
@@ -435,7 +442,7 @@ class tNG {
 				
 		//if the SQL is a SELECT statement
 		if (is_object($this->transactionResult)) {
-			if ($this->transactionResult->RecordCount() == 0) {
+			if ($this->transactionResult->num_rows  == 0) {
 				$this->transactionResult = null;
 			}
 		}
@@ -449,6 +456,7 @@ class tNG {
 			return false;
 		}
 		
+		//! QUITE ESTO, no dejaba redirect en LOCAL CORRECTO. mike 21/01/2025
 		$ret = $this->executeTriggers("END");
 		if (is_object($ret)) {
 			$this->setError($ret);
